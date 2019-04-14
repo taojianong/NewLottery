@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		width="200" creationComplete="init(event)" mouseChildren="false"
+		click="hgroup1_clickHandler(event)" gap="2" verticalCenter=""
+		>
+	<fx:Script>
+		<![CDATA[
+			import com.ConfigGlobal;
+			import com.UIGlobal;
+			import com.event.ColorEvent;
+			
+			import mx.events.FlexEvent;
+			
+			private var isComplete:Boolean = false;
+			protected function init(event:FlexEvent):void
+			{
+				isComplete = true;
+				mt_txt.text = "第" + period + "期";
+				mr_txt.text = red;
+				mb_txt.text = blue;		
+			}			
+			
+			public var period:String = "";
+			/**<b>获取当期期数如（2012022）在数组ConfigGlobal.Instance.datas中的索引</b>**/
+			public function getPeriodIndex():int
+			{
+				for(var i:int=0;i<ConfigGlobal.Instance.datas.length;i++)
+				{
+					var obj:Object = ConfigGlobal.Instance.datas[i];
+					if(obj.time == period)
+					{
+						return i;
+					}
+				}
+				return 0;
+			}
+			
+			public var red:String = "";
+			
+			public var blue:String = "";
+			
+			/**<b>设置第N期中奖彩票信息,默认为最近期的</b>
+			 * @param period 期数
+			 * @param red 红色球信息(红色)
+			 * @param blue 蓝色球信息(蓝色)
+			 * **/
+			public function setPeriodInfo(period:*,red:*,blue:*):void				
+			{
+				this.period = period;
+				this.red = red;
+				this.blue = blue;
+				
+				if(isComplete)
+				{
+					mt_txt.text = "第" + period + "期";
+					mr_txt.text = red;
+					mb_txt.text = blue;
+				}					
+			}			
+			
+			protected function hgroup1_clickHandler(event:MouseEvent):void
+			{
+				var colorEvent:ColorEvent = new ColorEvent(ColorEvent.CLICKS);
+				colorEvent.colorItem = this;
+				UIGlobal.Instance.mainUI.cLitem.dispatchEvent(colorEvent);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	<s:Label id="mt_txt" color="#000000" />
+	<s:Label id="mr_txt" color="#ff0000" />
+	<s:Label id="mb_txt" color="#0000ff"/>	
+</s:HGroup>

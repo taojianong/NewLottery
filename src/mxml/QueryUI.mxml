@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" width="800" height="600"
+		 creationComplete="init(event)" xmlns:extend="mxml.extend.*" show="init(event)"
+		 >
+	<!--存储数据-->
+	<fx:Script>
+		<![CDATA[
+			import com.ColorGlobal;
+			import com.ConfigGlobal;
+			import com.DataGlobal;
+			import com.MethodGlobal;
+			import com.UIGlobal;
+			import com.control.BallController;
+			import com.manger.BallType;
+			import com.manger.QueryManager;
+			import com.pub.PublicClass;
+			import com.shape.Ball;
+			import com.util.ColorUtils;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			
+			import mx.events.FlexEvent;
+			import mx.utils.ColorUtil;
+			
+			import spark.events.TextOperationEvent;
+			
+			private var isComplete:Boolean = false;
+			
+			private var ballContorller:BallController ;
+	
+			private var blueContorller:BallController;
+			
+			public function init(event:FlexEvent=null):void
+			{
+				isComplete = true;
+				showHandler();			
+				
+				var radius:int = 12;
+				var row:int = 10;
+				var tx:int = 5;
+				var ty:int = 5;
+				var i:int;
+				var ball:Ball;
+				///2012.10.4 
+				ballContorller = new BallController( balls.graphics );
+				//创建红色球区域
+				for(i=0;i<33;i++)
+				{
+					ball = new Ball(radius,0xffffff);
+					ball.ballIndex = i+1;
+					ball.type = BallType.RED;
+					ball.x = int(i%row) * (ball.radius*2 + tx);
+					ball.y = int(i/row) * (ball.radius*2+ty);
+					ballContorller.add( ball );				
+				}				
+				
+				ballContorller.eW = row * radius * 2 + (row - 1) * tx;
+				ballContorller.eH = 4 * radius * 2 +  3 * ty;
+				ballContorller.drawBalls();
+								
+				//创建篮球区域
+				blueContorller = new BallController( blueBalls.graphics );
+				for(i=0;i<16;i++)
+				{
+					ball = new Ball(radius,0xffffff);
+					ball.ballIndex = i+1;
+					ball.type = BallType.BLUE;
+					ball.x = int(i%row) * (ball.radius*2 + tx);
+					ball.y = int(i/row) * (ball.radius*2+ty);
+					ball.downColor = ColorUtils.BULE;
+					blueContorller.add( ball );				
+				}
+				
+				blueContorller.eW = row * radius * 2 + (row - 1) * tx;
+				blueContorller.eH = 2 * radius * 2 +  2 * ty;
+				blueContorller.drawBalls();
+			}
+			
+			private var rTxt:String = "";
+			private var bTxt:String = "";
+			
+			protected function balls_mouseDownHandler(event:MouseEvent):void
+			{
+				var obj:Object = event.target;
+				ballContorller.mouseDown(balls.mouseX,balls.mouseY);
+				
+				rTxt = PublicClass.getColorHtmlText( ballContorller.getDownBalls().toString() , ColorGlobal.RED );
+				var txt:String = rTxt +"    "+ bTxt;
+				bInfo.textFlow = TextConverter.importToFlow(txt,TextConverter.TEXT_FIELD_HTML_FORMAT);
+			}
+			
+			
+			protected function blueBalls_mouseDownHandler(event:MouseEvent):void
+			{
+				blueContorller.mouseDown(blueBalls.mouseX,blueBalls.mouseY);
+				
+				bTxt = PublicClass.getColorHtmlText( blueContorller.getDownBalls().toString() , ColorGlobal.BULE );
+				var txt:String = rTxt +"    "+ bTxt;
+				bInfo.textFlow = TextConverter.importToFlow(txt,TextConverter.TEXT_FIELD_HTML_FORMAT);
+			}
+			
+			//存储中奖
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				QueryManager.Insance.saveFunc = function():void
+				{
+					ballContorller.clear();
+					blueContorller.clear();
+					bInfo.text = "";
+					QueryManager.Insance.saveFunc = null;
+				}
+	
+				if(ballContorller.getDownBalls().length == 6 && blueContorller.getDownBalls().length == 1)
+				{
+					var str:String = ballContorller.getDownBalls().toString() + "-" + blueContorller.getDownBalls().toString();
+					trace("存储中奖数据: " + str);
+					QueryManager.Insance.save( int(t1.text) , str ,String( (new Date).time) , MethodGlobal.Instance.getLotteryTime() );
+				}
+				else
+				{
+					trace("中奖格式不正确");
+				}				
+			}
+			
+			//清理
+			protected function aClear_clickHandler(event:MouseEvent):void
+			{
+				ballContorller.clear();
+				blueContorller.clear();
+				bInfo.text = "";
+				rTxt = "";
+				bTxt = "";
+			}
+			
+			//购买
+			protected function buy_clickHandler(event:MouseEvent):void
+			{	
+				if(ballContorller.getDownBalls().length == 6 && blueContorller.getDownBalls().length == 1)
+				{
+					var str:String = ballContorller.getDownBalls().toString() + "-" + blueContorller.getDownBalls().toString();
+					trace("存储购买数据: " + str);
+					var obj:Object = new Object;
+					obj.data = str;
+					obj.period = int(t1.text);
+					obj.date = String( (new Date).time ); // PublicClass.switchTime( (new Date).time); //购买日期
+					obj.stime = MethodGlobal.Instance.getLotteryTime();//开奖日期
+					obj.log = "手动选号";
+					QueryManager.Insance.saveSelf( obj );
+					
+					ballContorller.clear();
+					blueContorller.clear();
+					bInfo.text = "";
+					info.text = "存储购买号码成功";
+				}
+				else
+				{
+					trace("存储购买号码格式不正确");
+				}
+					
+			}
+			
+			protected function showHandler(event:FlexEvent=null):void
+			{				
+				if(ConfigGlobal.Instance.datas.length > 0 && isComplete )
+				{
+					QueryManager.Insance.selectPeriod = ConfigGlobal.Instance.datas[0].period;
+					peri.text = "" + ConfigGlobal.Instance.datas[0].period;
+					t1.text = "" + (int(peri.text) + 1);
+				}	
+				else
+				{
+					peri.text = "2012000";
+					t1.text = "2012000";
+				}
+			}
+			
+			//查询期数
+			protected function check_clickHandler(event:MouseEvent):void
+			{
+				QueryManager.Insance.selectFunc = function selectFunc():void
+				{
+					info.text = DataGlobal.Instance.pushDisplayInfo;
+				}
+				QueryManager.Insance.selectUsers( int(peri.text) );				
+			}
+			
+			protected function peri_changeHandler(event:TextOperationEvent):void
+			{
+				QueryManager.Insance.selectPeriod = int(peri.text);
+			}
+			
+			//存储中奖号码到Data表中
+			protected function sZj_clickHandler(event:MouseEvent):void
+			{
+				if(!this.isCan)
+				{
+					info.text = "存储" + t1.text + "期号码失败，请输入完整号码";
+					return;
+				}
+				
+				QueryManager.Insance.saveFunc = function():void
+				{
+					peri.text = "" + (int(peri.text)+1);
+					t1.text = "" + (int(t1.text) + 1);
+					QueryManager.Insance.saveFunc = null;
+				}
+				
+				var str:String = t2.text + "," + t3.text + "," + t4.text + "," + t5.text + "," + t6.text + "," +
+					t7.text + "-" + t8.text;			
+				QueryManager.Insance.save( int(t1.text) , str ,String( (new Date).time) , MethodGlobal.Instance.getLotteryTime() );
+				
+				clear();
+			}
+			
+			public function clear():void
+			{
+				t2.text = "";
+				t3.text = "";
+				t4.text = "";
+				t5.text = "";
+				t6.text = "";
+				t7.text = "";
+				t8.text = "";
+			}
+			
+			//删除中奖对应期数的数据
+			protected function dZj_clickHandler(event:MouseEvent):void
+			{
+				QueryManager.Insance.deleteFunc = function():void
+				{
+					for( var i:int=0;i<ConfigGlobal.Instance.datas.length;i++)
+					{
+						var obj:Object = ConfigGlobal.Instance.datas[i];
+						if(obj.period == peri.text)
+						{
+							ConfigGlobal.Instance.datas.splice(i,1);	
+							ConfigGlobal.Instance.blues.splice(i,1);
+							ConfigGlobal.Instance.reds.splice(i,1);
+							break;
+						}
+					}
+					init();
+					if(ConfigGlobal.Instance.datas.length>0)
+					{
+						DataGlobal.Instance.theLastPhase = ConfigGlobal.Instance.datas[0].period;			
+						DataGlobal.Instance.period = int(ConfigGlobal.Instance.datas[0].period);
+					}	
+					
+					dis_clickHandler(); //重新显示中奖期数数据
+				}				
+				QueryManager.Insance.delte( int(peri.text) );
+			}
+			
+			//更新中奖
+			protected function uZj_clickHandler(event:MouseEvent):void
+			{
+				if(!this.isCan)
+				{
+					info.text = "更新" + t1.text + "期号码失败，请输入完整号码";
+					return;
+				}
+				var str:String = t2.text + "," + t3.text + "," + t4.text + "," + t5.text + "," + t6.text + "," +
+					t7.text + "-" + t8.text;			
+				QueryManager.Insance.update( int(t1.text) , str , String( (new Date).time) , MethodGlobal.Instance.getLotteryTime());
+			}
+			
+			/**<b>是否可以购买,输入</b>**/
+			private function get isCan():Boolean
+			{
+				if(t1.text == "" || t2.text == "" || t3.text == "" || t4.text == "" || t5.text == "" || t6.text == "" || t7.text == "" || 
+					t8.text == "")
+				{
+					return false;
+				}
+				return true;
+			}
+			
+			//存储购买号码到Self表中
+			protected function sBuy_clickHandler(event:MouseEvent):void
+			{
+				if(!this.isCan)
+				{
+					info.text = "存储购买号码失败，请输入完整号码";
+					return;
+				}
+				var str:String = t2.text + "," + t3.text + "," + t4.text + "," + t5.text + "," + t6.text + "," +
+					t7.text + "-" + t8.text;	
+				var obj:Object = new Object;
+				obj.data = str;
+				obj.period = int(t1.text);
+				obj.date = String( (new Date).time ); // PublicClass.switchTime( (new Date).time); //购买日期
+				obj.stime = MethodGlobal.Instance.getLotteryTime();//开奖日期
+				obj.log = "手动选号";
+				QueryManager.Insance.saveSelf( obj );
+				
+				clear();
+				info.text = "存储购买号码成功";				
+			}	
+			
+			//显示购买号码到Self表中的号码
+			protected function dBuy_clickHandler(event:MouseEvent):void
+			{
+				QueryManager.Insance.selectFunc = function selectFunc():void
+				{
+					info.text = DataGlobal.Instance.pushDisplayInfo;
+				}
+				QueryManager.Insance.selectUsers( int(t1.text),"Self" ); //查询XX期自选号码
+			}	
+			
+			/**显示中奖期数数据**/
+			public function dis_clickHandler(event:MouseEvent=null):void
+			{
+				info.text = "";
+				for(var i:int=0;i < ConfigGlobal.Instance.datas.length ; i++)
+				{
+					var obj:Object = ConfigGlobal.Instance.datas[i];
+					info.text += "期数: " + obj.period + " 数据: " + obj.data + "\n";
+				}
+			}
+
+			protected function t1_changeHandler(event:TextOperationEvent):void
+			{
+				var txt:TextInput = event.currentTarget as TextInput;
+				if(txt != null)
+				{
+					txt.selectRange(txt.text.length,txt.text.length);
+				}				
+			}
+			
+			protected function t1_focusInHandler(event:FocusEvent):void
+			{
+				var txt:TextInput = event.currentTarget as TextInput;
+				if(txt != null)
+				{
+					txt.selectRange(txt.text.length,txt.text.length);
+				}	
+			}
+			
+			//查询中奖
+			protected function chk_clickHandler(event:MouseEvent):void
+			{
+				var arr:Array = [];
+				QueryManager.Insance.selectFunc = function selectFunc():void
+				{
+					info.text = "";
+					for each( var obj:Object in QueryManager.Insance.result.data )
+					{
+						arr.push( obj );
+					}
+					QueryManager.Insance.selectFunc = null;
+					
+					arr = QueryManager.Insance.getLotterys( arr , int(peri.text) );
+					
+					if(arr == null || arr.length <= 0)
+					{
+						info.text = "无中奖号码";
+						return;
+					}
+					var i:int;
+					var allMoney:int; //总计获奖
+					for(i=0;i < arr.length ; i++)
+					{
+						obj = arr[i];
+						info.text += "中奖期数: " + obj.period + " 号码: " + obj.data + "  " + obj.level + "等奖" + " 金额: " +  obj.money + "元" + "\n";
+						allMoney += int(obj.money);
+					}		
+					
+					info.text += "总计获得奖金: " + allMoney + "元";
+				}
+				QueryManager.Insance.selectUsers( int(peri.text) , "Self");
+			}
+			
+			protected function dClear_clickHandler(event:MouseEvent):void
+			{
+				info.text = "";
+			}			
+			
+		]]>
+	</fx:Script>
+	<!--核奖区存储区-->
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:HGroup width="600" top="5" gap="5" horizontalCenter="0" horizontalAlign="left" verticalAlign="middle" >
+		<!--当前中奖期数-->
+		<s:TextInput id="peri" focusColor="#ff0000" borderVisible="true" restrict="0-9" 
+					 contentBackgroundAlpha="-40" width="80" change="peri_changeHandler(event)" 
+					 focusIn="t1_focusInHandler(event)" mouseChildren="false" 
+					 />
+		<s:Button id="check"  label="查询期数" click="check_clickHandler(event)"  />
+		<s:Button id="dis" right="0" label="中奖期数" click="dis_clickHandler(event)"
+				  verticalCenter="20"/>	
+		<s:Button id="chk" right="0" label="查询中奖" click="chk_clickHandler(event)"
+				  verticalCenter="20"/>	
+		<s:Button id="dZj" right="0" label="删除中奖" click="dZj_clickHandler(event)"
+				  verticalCenter="20"/>	
+	</s:HGroup>	
+	
+	<s:HGroup top="50" gap="1" width="600" horizontalCenter="0" horizontalAlign="left">
+		<!--购买期数，或当期中奖期数-->
+		<s:TextInput id="t1" maxChars="7" focusColor="{ColorUtils.BULE}" borderVisible="true" restrict="0-9"  
+					 contentBackgroundAlpha="0" left="0" y="10" width="80"  textAlign="left"
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />
+		<s:TextInput id="t2" maxChars="2" focusColor="{ColorUtils.BULE}" borderVisible="true" restrict="0-9" color="{ColorUtils.RED}"
+					 contentBackgroundAlpha="0" left="0" y="10" width="40" text="" textAlign="center" 
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />
+		<s:TextInput id="t3" maxChars="2" focusColor="{ColorUtils.BULE}" borderVisible="true" restrict="0-9" color="{ColorUtils.RED}"
+					 contentBackgroundAlpha="0" left="0" y="10" width="40" text="" textAlign="center" 
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />
+		<s:TextInput id="t4" maxChars="2" focusColor="{ColorUtils.BULE}" borderVisible="true" restrict="0-9"  color="{ColorUtils.RED}"
+					 contentBackgroundAlpha="0" left="0" y="10" width="40" text="" textAlign="center" 
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />
+		<s:TextInput id="t5" maxChars="2" focusColor="{ColorUtils.BULE}" borderVisible="true" restrict="0-9" color="{ColorUtils.RED}"
+					 contentBackgroundAlpha="0" left="0" y="10" width="40" text="" textAlign="center" 
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />
+		<s:TextInput id="t6" maxChars="2" focusColor="{ColorUtils.BULE}" borderVisible="true" restrict="0-9"  color="{ColorUtils.RED}"
+					 contentBackgroundAlpha="0" left="0" y="10" width="40" text="" textAlign="center" 
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />
+		<s:TextInput id="t7" maxChars="2" focusColor="{ColorUtils.BULE}" borderVisible="true" restrict="0-9"  color="{ColorUtils.RED}"
+					 contentBackgroundAlpha="0" left="0" y="10" width="40" text="" textAlign="center" 
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />			
+	</s:HGroup>
+	
+	<s:HGroup width="600" y="90" horizontalCenter="0" horizontalAlign="left" verticalAlign="middle">
+		<s:Button id="sZj" right="0" label="存储中奖" click="sZj_clickHandler(event)"
+				  verticalCenter="20"/>	
+		<s:Button id="uZj" right="0" label="更新中奖" click="uZj_clickHandler(event)"
+				  verticalCenter="20"/>				
+		<!--蓝色球-->
+		<s:TextInput id="t8" maxChars="2" focusColor="#ff0000" borderVisible="true" restrict="0-9"  color="{ColorUtils.BULE}"
+					 contentBackgroundAlpha="0" left="0" y="10" width="40" text="" textAlign="center" 
+					 change="t1_changeHandler(event)" focusIn="t1_focusInHandler(event)" mouseChildren="false"
+					 />	
+	</s:HGroup>
+	
+	<s:HGroup width="600" y="135" horizontalCenter="0" horizontalAlign="left" verticalAlign="middle">
+		<s:Button id="sBuy" right="0" label="存储购买" click="sBuy_clickHandler(event)"
+				  verticalCenter="20"/>	
+		<s:Button id="dBuy" right="0" label="显示购买" click="dBuy_clickHandler(event)"
+				  verticalCenter="20"/>		
+		<s:Button id="dClear" right="0" label="清空数据" click="dClear_clickHandler(event)"
+				  verticalCenter="20"/>		
+	</s:HGroup>
+	
+	<!--显示所有中奖号码-->
+	<s:TextArea id="info" focusEnabled="false" horizontalCenter="0" y="160" width="600" height="200"
+				editable="false"  />
+	
+	<s:Group id="balls" width="600" height="200" mouseDown="balls_mouseDownHandler(event)" 
+			 horizontalCenter="0" y="370"  />
+	
+	<s:Group id="blueBalls" width="600" height="200" mouseDown="blueBalls_mouseDownHandler(event)"
+			 x="400" y="370"  />
+	
+	<s:Button id="save" label="存储中奖" click="save_clickHandler(event)"
+			  x="400" y="450"/>	
+	
+	<s:Button id="buy" label="存储购买" click="buy_clickHandler(event)"
+			  x="470" y="450"/>	
+	
+	<s:Button id="aClear" label="清除" click="aClear_clickHandler(event)"
+			  x="540" y="450"/>	
+	
+	<s:TextArea id="bInfo" width="200" height="20" editable="false" mouseChildren="false" mouseEnabled="false"
+				textAlign="center" bottom="30" horizontalCenter="0" borderAlpha="0" focusAlpha="0"/>
+	<s:Label text="查询区" fontSize="14" color="#0000ff" left="0" top="0" />
+</s:Group>

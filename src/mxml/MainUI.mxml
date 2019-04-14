@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 		 
+		 xmlns:item="mxml.item.*" xmlns:mxml="mxml.*"
+		 width="800" height="600"  creationComplete="group1_creationCompleteHandler(event)" 
+		 >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ConfigGlobal;
+			import com.DataGlobal;
+			import com.SetGlobal;
+			import com.UIGlobal;
+			import com.event.ColorEvent;
+			import com.manger.AppManger;
+			import com.pub.ArrayUtill;
+			import com.pub.PublicClass;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{				
+				//初始概率
+				SetGlobal.Instance.theSameRedRate = Number(r_rate.text);
+				SetGlobal.Instance.theSameBlueRate = Number(b_rate.text);
+				SetGlobal.Instance.period = int(period.text);	
+				SetGlobal.Instance.selectPreiods = int(aa.text);
+				//SetGlobal.Instance.noReds = bb.text.split(',');
+				
+				bb.text = String(SetGlobal.Instance.noReds); //.toString()
+				
+				DataGlobal.Instance.pushDisplayInfo = "必定排除的数字: " + SetGlobal.Instance.noReds;
+			}
+			
+			public function init():void
+			{
+				info.setStyle("borderColor", "0x00ff00"); //无效
+				var arr:Array = ConfigGlobal.Instance.datas.slice(0,5);
+				cLitem.list = arr; //显示最近1-5期数据				
+				cLitem.addEventListener(ColorEvent.CLICKS,clickHandler);
+			}
+			
+			private function clickHandler(event:ColorEvent):void
+			{
+				if(event.colorItem != null)
+				{
+					cLitem.visible =false;
+					cItem.setPeriodInfo( event.colorItem.period , event.colorItem.red , event.colorItem.blue);
+					trace("当前选择的期数 period：" + event.colorItem.period + "　periodIndex: " + event.colorItem.getPeriodIndex());
+					SetGlobal.Instance.period = event.colorItem.getPeriodIndex();
+				}
+			}
+			
+			protected function r_btn_clickHandler(event:MouseEvent):void
+			{				
+				AppManger.Instance.selectBlueNumber();	//选蓝色球
+				info.text = DataGlobal.Instance.pushDisplayInfo; //显示当前信息
+			}
+			
+			//退出
+			protected function b_btn_clickHandler(event:MouseEvent):void
+			{			
+				//AppManger.Instance.selectBlueNumber();	//选蓝色球
+				NativeApplication.nativeApplication.exit();
+			}
+			
+			//选择红蓝
+			protected function rb_btn_clickHandler(event:MouseEvent):void
+			{
+				DataGlobal.Instance.pushDisplayInfo = "";
+				DataGlobal.Instance.pushDisplayInfo = "必定排除的数字: " + SetGlobal.Instance.noReds;
+				info.text = "";
+				//选红蓝号
+				//AppManger.Instance.selectRedNumberByOE();
+				AppManger.Instance.selectRedNumber( int(pers.text),1,ConfigGlobal.Instance.reds[0],SetGlobal.Instance.noReds);	
+				AppManger.Instance.selectBlueNumber(int(period.text));
+				
+				UIGlobal.Instance.mainUI.b_txt.text = DataGlobal.Instance.blues.toString();			
+				DataGlobal.Instance.pushDisplayInfo = "当前选择的蓝色号码: " + DataGlobal.Instance.blues +
+					"\n上"+ ConfigGlobal.Instance.blues.length + "期蓝色球数字: " +  ConfigGlobal.Instance.blues.toString();
+				info.text = DataGlobal.Instance.pushDisplayInfo; //显示当前信息				
+			}	
+			
+			protected function r_rate_changeHandler(event:TextOperationEvent):void
+			{
+				SetGlobal.Instance.theSameRedRate = Number(r_rate.text);					
+			}
+			
+			protected function b_rate_changeHandler(event:TextOperationEvent):void
+			{
+				SetGlobal.Instance.theSameBlueRate = Number(b_rate.text);				
+			}
+			
+			//第N期
+			protected function period_changeHandler(event:TextOperationEvent):void
+			{
+//				SetGlobal.Instance.period = int(period.text);	
+//		
+//				setPeriodInfo(ConfigGlobal.Instance.datas[SetGlobal.Instance.period].time,
+//					ConfigGlobal.Instance.reds[SetGlobal.Instance.period],
+//					ConfigGlobal.Instance.blues[SetGlobal.Instance.period]
+//				);		
+				
+				if(int(period.text) > 6)
+				{
+					period.text = "5";
+				}
+			}		
+			
+//			public function displayHtmlText():void
+//			{
+//			    //在4.5中可使用在4.6中不能使用
+//				StyleableTextField(m_txt.textDisplay).htmlText = "TextArea <b>bold</b> <i>italic</i>.";
+//			}
+			
+			/**<b>设置第N期中奖彩票信息,默认为最近期的</b>
+			 * @param period 期数
+			 * @param red 红色球信息(红色)
+			 * @param blue 蓝色球信息(蓝色)
+			 * **/
+			public function setPeriodInfo(period:*,red:*,blue:*):void				
+			{
+				if(cItem != null)
+					cItem.setPeriodInfo(period,red,blue);		
+			}
+			
+			protected function period_focusInHandler(event:FocusEvent):void
+			{
+				period.selectRange( period.text.length , period.text.length );
+			}
+			
+			protected function r_rate_focusInHandler(event:FocusEvent):void
+			{
+				r_rate.selectRange( r_rate.text.length , r_rate.text.length );
+			}
+			
+			protected function b_rate_focusInHandler(event:FocusEvent):void
+			{
+				b_rate.selectRange(b_rate.text.length,b_rate.text.length);
+			}		
+			
+			//点显示列表
+			protected function cItem_clickHandler(event:MouseEvent):void
+			{
+				cLitem.visible = !cLitem.visible;			
+			}
+			
+			protected function pers_focusInHandler(event:FocusEvent):void
+			{
+				pers.selectRange(pers.text.length,pers.text.length);				
+			}
+			
+			protected function pers_changeHandler(event:TextOperationEvent):void
+			{
+				if(int(pers.text) > 6)
+				{
+					pers.text = "5";
+				}
+			}
+			
+			//选出N期红色球
+			protected function aa_changeHandler(event:TextOperationEvent):void
+			{
+				SetGlobal.Instance.selectPreiods = int(aa.text);
+			}
+			
+			//必定排除的数字
+			protected function bb_changeHandler(event:TextOperationEvent):void
+			{
+				SetGlobal.Instance.noReds = bb.text.split(',');
+				DataGlobal.Instance.pushDisplayInfo = "必定排除的数字: " + SetGlobal.Instance.noReds;
+			}
+			
+		]]>
+	</fx:Script>
+		
+	<!--当期选号显示-->
+	<s:HGroup horizontalCenter="0" y="50">
+		<s:Label id="r_txt" horizontalCenter="0" color="#ff0000" />
+		<s:Label id="b_txt" horizontalCenter="0" color="#0000ff"/>
+	</s:HGroup>
+	
+	<!--基本参数设置-->
+	<s:Label text="      选N期蓝              红球概率        蓝球概率   " width="100%" y="90" />
+	<s:HGroup horizontalCenter="0" y="110" gap="0" >
+		<s:TextInput id="period" width="100" text="5" change="period_changeHandler(event)" focusIn="period_focusInHandler(event)" restrict="0-9" textAlign="center" />
+		<s:TextInput id="r_rate" width="100" text="0.001" change="r_rate_changeHandler(event)" focusIn="r_rate_focusInHandler(event)" restrict="0-9 ." textAlign="center"/>
+		<s:TextInput id="b_rate" width="100" text="0.05" change="b_rate_changeHandler(event)" focusIn="b_rate_focusInHandler(event)" restrict="0-9 ." textAlign="center"/>
+	</s:HGroup>	
+	
+	<s:Label text="     选N期红        排除前N期       必排除数字   " width="100%" y="150" />
+	<s:HGroup horizontalCenter="0" y="170" gap="0" >
+		<s:TextInput id="aa" width="100" text="5" change="aa_changeHandler(event)" focusIn="r_rate_focusInHandler(event)" restrict="0-9 ." textAlign="center"/>
+		<s:TextInput id="pers" width="100" text="2" change="pers_changeHandler(event)" focusIn="pers_focusInHandler(event)" restrict="0-9" textAlign="center" />
+		<s:TextInput id="bb" width="100"  change="bb_changeHandler(event)" focusIn="b_rate_focusInHandler(event)" restrict="0-9 ," textAlign="center"/>
+	</s:HGroup>	
+	
+	<!--显示信息 color="0xff00ff"-->
+	<s:TextArea id="info" width="100%" color="0xff00ff" height="190" y="210" focusAlpha="0" selectable="false" editable="false"
+				 contentBackgroundAlpha="0" focusEnabled="false"  
+				/>
+	
+	<!--选号按钮-->
+	<s:HGroup horizontalCenter="0" horizontalAlign="center"  bottom="120" width="100%">
+		<s:Button id="r_btn" label="选号(蓝)" click="r_btn_clickHandler(event)"  />
+		<s:Button id="b_btn" label="退出" click="b_btn_clickHandler(event)" />
+		<s:Button id="rb_btn" label="选号(红蓝)" click="rb_btn_clickHandler(event)"/>
+	</s:HGroup>	
+	
+	<!--最近第N期中奖号码-->
+	<item:ColorItem id="cItem" horizontalCenter="0" y="10" click="cItem_clickHandler(event)" />
+	<mxml:ColorItemList id="cLitem" horizontalCenter="0" y="25" visible="false" />
+</s:Group>

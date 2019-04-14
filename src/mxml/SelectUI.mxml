@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 width="800" height="600" show="bordercontainer1_showHandler(event)" 
+		 creationComplete="bordercontainer1_creationCompleteHandler(event)"
+		 >
+	<!--选号区-->
+	<fx:Script>
+		<![CDATA[
+			import com.ConfigGlobal;
+			import com.DataGlobal;
+			import com.MethodGlobal;
+			import com.SetGlobal;
+			import com.UIGlobal;
+			import com.manger.AppManger;
+			import com.manger.QueryManager;
+			import com.manger.RuleManager;
+			import com.pub.PublicClass;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import mxml.item.SelectItem;
+			
+			import spark.events.TextOperationEvent;
+			
+			private var isComplete:Boolean = false;
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{				
+				isComplete = true;
+							
+				bordercontainer1_showHandler();
+			}
+			
+			protected function bordercontainer1_showHandler(event:FlexEvent=null):void
+			{
+				if(isComplete)
+				{									
+					init();	
+				}
+			}
+			
+			private function init():void
+			{
+//				if(ConfigGlobal.Instance.datas.length > 0)
+//				{
+//					peri.text = "" + int(ConfigGlobal.Instance.datas[0].period + 1);	
+//				}
+				SetGlobal.Instance.noReds = exc.text == "" ? null : exc.text.split(',');
+				SetGlobal.Instance.odd = 2;
+				SetGlobal.Instance.even = 4;
+				SetGlobal.Instance.one = 2;
+				SetGlobal.Instance.two = 2;
+				SetGlobal.Instance.three = 2;
+				SetGlobal.Instance.primes = 2; //质数
+				SetGlobal.Instance.isHyphen = false; //是否连号
+				odd.text = "2";
+				even.text= "4";
+				one.text = "2";
+				two.text  = "2";
+				three.text = "2";
+				primes.text = "2";
+				hyphen.selected = false;
+				
+				balls.source = [];
+				balls.refresh();
+			}
+			
+			protected function check_clickHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			[Bindable]
+			/**<b>选择蓝色球数据</b>
+			 * 用于显示在列表中
+			 * **/
+			private var balls:ArrayCollection = new ArrayCollection;
+			
+			//随机选号
+			protected function ran_btn_clickHandler(event:MouseEvent):void
+			{
+				balls.source = RuleManager.Instance.getRandomRedAndBlueBalls();
+				
+			}		
+			
+			//存储选号
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				for(var i:int=0;i<list.dataGroup.numChildren;i++)
+				{
+					var selectItem:SelectItem = list.dataGroup.getChildAt(i) as SelectItem;										
+					if(selectItem != null && selectItem.isSelected)
+					{
+						var obj:Object = new Object;
+						obj.data = selectItem.data;
+						obj.period = int(peri.text);
+						obj.date = String( (new Date).time ) ; //PublicClass.switchTime( (new Date).time); //购买日期
+						obj.stime = MethodGlobal.Instance.getLotteryTime(); //开奖日期
+						obj.log = "随机选号码";
+						QueryManager.Insance.saveSelf( obj );
+					}
+				}		
+				balls.source = [];
+				balls.refresh();
+			}
+			
+			//删除表
+			protected function del_clickHandler(event:MouseEvent):void
+			{
+				//QueryManager.Insance.deleteTable( tab.text );
+			}			
+			
+			//分区选号
+			protected function part_clickHandler(event:MouseEvent):void
+			{
+				var num:int = 5; //选出5组号码
+				var gArr:Array = [];
+				for(var i:int=0;i<num;i++)
+				{
+					var arr:Array =	RuleManager.Instance.selectedNumbersWith(SetGlobal.Instance.odd,SetGlobal.Instance.even,SetGlobal.Instance.one,
+					SetGlobal.Instance.two,SetGlobal.Instance.three,SetGlobal.Instance.primes,SetGlobal.Instance.isHyphen , SetGlobal.Instance.noReds
+					);
+					var str:String = arr.toString() + "-" +  RuleManager.Instance.findNoRepetBuleNumber(1);
+					gArr.push( str );
+					trace("根据奇偶三区质数比选出的数字: " + str);
+				}	
+				
+				balls.source = gArr;
+				balls.refresh();
+			}
+			
+			protected function hyphen_changeHandler(event:Event):void
+			{
+				SetGlobal.Instance.isHyphen = hyphen.selected;
+			}
+			
+			protected function all_changeHandler(event:TextOperationEvent):void
+			{
+				if(!isComplete) return;
+				var oddAndEven:int = 0; //奇偶比之和
+				var red:int = 0; //差值
+				var txt:TextInput = event.currentTarget as TextInput;
+				if(txt != null)
+				{
+					switch(txt.id)
+					{
+						//奇数
+						case "odd":
+							SetGlobal.Instance.odd = int(odd.text);	
+							even.text = String(DataGlobal.REDS - SetGlobal.Instance.odd);
+							SetGlobal.Instance.even = int(even.text);
+							break;
+						//偶数
+						case "even":
+							SetGlobal.Instance.even = int(even.text);
+							odd.text = String(DataGlobal.REDS - SetGlobal.Instance.even);
+							SetGlobal.Instance.odd = int(odd.text);
+							break;					
+						//质数
+						case "primes":
+							SetGlobal.Instance.primes = int(primes.text);
+							break;
+					}
+				}
+			}
+			
+			//设置默认值
+			protected function base_clickHandler(event:MouseEvent):void
+			{
+				init();
+			}
+	
+			//一区选择
+			protected function one_changeHandler(event:TextOperationEvent):void
+			{
+				//一区
+				SetGlobal.Instance.one = one.text == "" ? 0 : int(one.text);
+				var red:int = DataGlobal.REDS - SetGlobal.Instance.one; //剩余值
+				if( red <= 0 )
+				{
+					two.text   = "0";
+					three.text = "0";
+				}
+				else 
+				{
+					two.text   = "1";
+					three.text = String(red - 1);
+				}	
+				SetGlobal.Instance.two = int(two.text);
+				SetGlobal.Instance.three = int(three.text);				
+			}			
+			//二区选择
+			protected function two_changeHandler(event:TextOperationEvent):void
+			{
+				//二区
+				SetGlobal.Instance.two = int(two.text);	
+				var red:int = DataGlobal.REDS - SetGlobal.Instance.one; //剩余值						
+				if( red <= 0 )
+				{
+					two.text = red.toString();
+					three.text = "0";
+				}
+				else 
+				{
+					three.text =String(red - int(two.text));
+				}	
+				SetGlobal.Instance.one = int(one.text);
+				SetGlobal.Instance.three = int(three.text);	
+			}			
+			//三区选择
+			protected function three_changeHandler(event:TextOperationEvent):void
+			{
+				//三区
+				SetGlobal.Instance.three = int(three.text);	
+				
+				SetGlobal.Instance.two = int(two.text);
+				SetGlobal.Instance.one = int(one.text);	
+			}
+			
+			protected function exc_changeHandler(event:TextOperationEvent):void
+			{
+				SetGlobal.Instance.noReds =  exc.text == "" ? null : exc.text.split(',');
+			}
+			
+			//删除选号
+			protected function dSave_clickHandler(event:MouseEvent):void
+			{
+				var dNum:int = 0; //要删除的条目数
+				for(var i:int=0;i<list.dataGroup.numChildren;i++)
+				{
+					var selectItem:SelectItem = list.dataGroup.getChildAt(i) as SelectItem;										
+					if(selectItem != null && selectItem.isSelected && selectItem.data != null )
+					{
+						QueryManager.Insance.delte( String(selectItem.data.date) , "date" , "Self");
+						dNum++;
+					}
+				}
+				if(dNum > 0)
+				{
+					var excNum:int = 0; //执行次数
+					QueryManager.Insance.deleteFunc = null;
+					QueryManager.Insance.deleteFunc = function deleteFunc():void
+					{
+						excNum++;
+						if(excNum == dNum)
+						{
+							chk_btn_clickHandler(); //执行选择查看选号的操作
+						}
+					}
+				}
+			}
+			
+			//查看xxxx期已选号码
+			protected function chk_btn_clickHandler(event:MouseEvent=null):void
+			{
+				var arr:Array = [];
+				balls.source = [];
+				balls.refresh();
+				QueryManager.Insance.selectFunc = function selectFunc():void
+				{
+					for each( var obj:Object in QueryManager.Insance.result.data )
+					{
+						arr.push( obj );
+					}
+					balls.source = arr;
+					QueryManager.Insance.selectFunc = null;
+				}
+				QueryManager.Insance.selectUsers( int(peri.text) , "Self");
+			}
+					
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<s:HGroup top="10" verticalAlign="middle" width="600" horizontalCenter="0">
+		<!--选择期数-->
+		<s:Label text="选择期数: " />
+		<s:TextInput focusColor="#ff0000" borderVisible="true"  contentBackgroundAlpha="0" text="5" width="50" />
+		<!--选号按钮-->
+		<s:Button id="ran_btn" label="随机选号" click="ran_btn_clickHandler(event)"  />
+		<!--查看已选号码-->
+		<s:Button id="chk_btn" label="查看选号" click="chk_btn_clickHandler(event)"  />
+		<!--删除表-->
+		<!--<s:TextInput id="tab" focusColor="#ff0000" borderVisible="true"  contentBackgroundAlpha="0" text="Self" width="50" />
+		<s:Button id="del" label="删除表" click="del_clickHandler(event)"  />-->
+	</s:HGroup>	
+	
+	<s:HGroup   top="55" verticalAlign="middle" width="600" horizontalCenter="0">
+		<!--选择期号-->
+		<s:Label text="选择期号: " />
+		<s:TextInput id="peri" focusColor="#ff0000" borderVisible="true" text="{DataGlobal.Instance.period+1}"  contentBackgroundAlpha="0" width="80" />
+		<s:TextInput id="exc" focusColor="#ff0000" borderVisible="true" change="exc_changeHandler(event)"  restrict="0-9\," contentBackgroundAlpha="0" width="120" />
+	</s:HGroup>
+	
+	<s:HGroup top="90" width="600" horizontalCenter="0"  verticalAlign="middle" gap="1" >
+		<s:Label text="奇" width="60" textAlign="center" />
+		<s:Label text="偶" width="60" textAlign="center" />
+		<s:Label text="一区" width="40" textAlign="center" />
+		<s:Label text="二区" width="40" textAlign="center" />
+		<s:Label text="三区" width="40" textAlign="center" />
+		<s:Label text="质数" width="30" textAlign="center" />
+		<s:Label text="是否连号" width="60" textAlign="center" />
+	</s:HGroup>
+	<s:HGroup top="110" width="600" horizontalCenter="0" verticalAlign="middle" gap="1">
+		<!--奇偶比-->
+		<s:TextInput id="odd" focusColor="#ff0000" textAlign="center" borderVisible="true" restrict="0-6" maxChars="1" change="all_changeHandler(event)"  contentBackgroundAlpha="0" width="60" />
+		<s:TextInput id="even" focusColor="#ff0000" textAlign="center" borderVisible="true" restrict="0-6" maxChars="1" change="all_changeHandler(event)" contentBackgroundAlpha="0" width="60" />
+		<!--三区比-->
+		<s:TextInput id="one" focusColor="#ff0000" textAlign="center" borderVisible="true" restrict="0-6" maxChars="1" change="one_changeHandler(event)" contentBackgroundAlpha="0" width="40" />
+		<s:TextInput id="two" focusColor="#ff0000" textAlign="center" borderVisible="true" restrict="0-6" maxChars="1" change="two_changeHandler(event)" contentBackgroundAlpha="0" width="40" />
+		<s:TextInput id="three" focusColor="#ff0000" textAlign="center" borderVisible="true" restrict="0-6" maxChars="1" change="three_changeHandler(event)" contentBackgroundAlpha="0" width="40" />
+		<!--质数-->
+		<s:TextInput id="primes" focusColor="#ff0000" textAlign="center" borderVisible="true" restrict="0-6" maxChars="1" change="all_changeHandler(event)" contentBackgroundAlpha="0" width="30" />
+		<!--是否有连号-->
+		<s:CheckBox id="hyphen" change="hyphen_changeHandler(event)" />
+	</s:HGroup>
+	
+	<s:List id="list" dataProvider="{balls}" horizontalCenter="0" width="600" height="300" y="160" itemRenderer="mxml.item.SelectItem" />
+	
+	<s:HGroup width="600" bottom="100" horizontalCenter="0" verticalAlign="middle">
+		<s:Button id="save" label="存储选号" click="save_clickHandler(event)"  />
+		<s:Button id="part" label="分区选号" click="part_clickHandler(event)"  />
+		<s:Button id="dSave" label="删除选号" click="dSave_clickHandler(event)"  />
+		<s:Button id="base" label="默认值" click="base_clickHandler(event)"  />
+	</s:HGroup>
+	
+	<s:Label text="选号区" fontSize="14" color="#0000ff" left="0" top="0" />
+</s:BorderContainer>

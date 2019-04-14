@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:mxml="mxml.*"
+					   width="800" height="600" creationComplete="init(event)"  title="双球选号分析器"
+					   initialize="windowedapplication1_initializeHandler(event)"
+					   closing="windowedapplication1_closeHandler(event)" showStatusBar="false"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.ConfigGlobal;
+			import com.DataGlobal;
+			import com.SetGlobal;
+			import com.UIGlobal;
+			import com.event.MySQLEvent;
+			import com.loader.XMLLoader;
+			import com.manger.AppManger;
+			import com.manger.QueryManager;
+			import com.manger.RuleManager;
+			import com.res.Resource;
+			import com.setup.SettingFont;
+			import com.setup.SettingSystem;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import mxml.MainUI;
+			import mxml.QueryUI;
+			import mxml.SelectUI;
+			
+			import spark.events.TextOperationEvent;
+			
+			protected function init(event:FlexEvent):void
+			{
+				UIGlobal.Instance.app = this;
+				UIGlobal.Instance.mainUI   = mainUI;
+				UIGlobal.Instance.selectUI = selectUI;
+				UIGlobal.Instance.queryUI  = queryUI;
+				UIGlobal.Instance.chartUI  = chartUI;
+				
+				QueryManager.Insance.creatSQLFile("query",false);
+				QueryManager.Insance.connectSQLite("query");//链接并打开数据库
+				this.addEventListener(MySQLEvent.CONNECT_COMPLETE,QueryManager.Insance.connect_completeHandler);
+				
+				//设置AIR最小化时的状态
+				SettingSystem.Instance.init();
+			}
+			
+			//初始化此组件的内部结构。 
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void
+			{
+				//镶嵌字体
+				new SettingFont().setCustomFont();
+			}
+			
+			//主选区 
+			protected function mainBtn_clickHandler(event:MouseEvent):void
+			{
+				UIGlobal.Instance.mainUI.visible   = true;
+				UIGlobal.Instance.selectUI.visible = false;
+				UIGlobal.Instance.queryUI.visible = false;
+				UIGlobal.Instance.chartUI.visible = false;
+			}
+			
+			//选号区
+			protected function selectBtn_clickHandler(event:MouseEvent):void
+			{
+				UIGlobal.Instance.mainUI.visible   = false;
+				UIGlobal.Instance.selectUI.visible = true;
+				UIGlobal.Instance.queryUI.visible = false;
+				UIGlobal.Instance.chartUI.visible = false;
+			}
+			
+			//查询界面
+			protected function queryBtn_clickHandler(event:MouseEvent):void
+			{
+				UIGlobal.Instance.mainUI.visible   = false;
+				UIGlobal.Instance.selectUI.visible = false;
+				UIGlobal.Instance.queryUI.visible = true;
+				UIGlobal.Instance.chartUI.visible = false;
+			}
+			
+			//图表界面
+			protected function chartBtn_clickHandler(event:MouseEvent):void
+			{
+				UIGlobal.Instance.mainUI.visible   = false;
+				UIGlobal.Instance.selectUI.visible = false;
+				UIGlobal.Instance.queryUI.visible = false;
+				UIGlobal.Instance.chartUI.visible = true;
+			}
+					
+			//关闭窗口
+			protected function windowedapplication1_closeHandler(event:Event):void
+			{
+				event.preventDefault();//阻止默认的事件\
+				Alert.yesLabel = "最小化";  
+				Alert.noLabel =  "退出";      
+				Alert.show("是否关闭程序","提示", 3, this, alertCloseHandler);
+			}
+			   
+			protected function alertCloseHandler(event:CloseEvent):void
+			{      
+				if(event.detail == Alert.NO)
+				{      
+					SettingSystem.Instance.closeApp(event);      
+				}
+				else
+				{      
+					SettingSystem.Instance.dock();//最小化到托盘      
+				}      
+			}  
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<!--选号区-->
+	<mxml:MainUI id="mainUI" visible="false" />
+	<!--选号区-->
+	<mxml:SelectUI id="selectUI" visible="true" />
+	<!--查询区-->
+	<mxml:QueryUI id="queryUI" visible="false"/>
+	<!--图表区-->
+	<mxml:ChartUI id="chartUI" visible="false"/>
+	
+	<s:HGroup width="100%" horizontalAlign="center" horizontalCenter="0" bottom="0" >
+		<s:Button id="mainBtn" label="选号界面" click="mainBtn_clickHandler(event)" />
+		<s:Button id="selectBtn" label="选号界面" click="selectBtn_clickHandler(event)" />
+		<s:Button id="queryBtn" label="查询界面" click="queryBtn_clickHandler(event)" />
+		<s:Button id="chartBtn" label="图表界面" click="chartBtn_clickHandler(event)" />
+	</s:HGroup>
+</s:WindowedApplication>

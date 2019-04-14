@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" width="200" height="40"
+		  creationComplete="hgroup1_creationCompleteHandler(event)"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			private var isComplte:Boolean = false;
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				isComplte = true;
+			}			
+			
+			override public function set data(value:Object):void
+			{
+				super.data = value;
+				if(check != null)
+					check.selected = false;
+				
+				if(value != null)
+				{
+					var str:String = String(value);
+					if(value.propertyIsEnumerable('data'))
+					{
+						str = value.data;
+					}					
+					red.text = String(str).split('-')[0];
+					blue.text= String(str).split('-')[1];										
+				}
+			}
+			
+			public function get isSelected():Boolean
+			{
+				if(isComplte)
+					return check.selected;
+				return false;
+			}				
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:HGroup id="group" width="100%" verticalAlign="middle" >
+		<s:Label id="red" width="150" color="0xff0000" />
+		<s:Label id="blue" width="20" color="0x0000ff" />
+		<s:CheckBox id="check" width="40" height="40" />
+	</s:HGroup>
+	
+</s:ItemRenderer>

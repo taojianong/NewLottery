@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		creationComplete="init(event)" xmlns:chart="mxml.chart.*"
+		show="group1_showHandler(event)" width="800" height="600"
+		>
+	<fx:Script>
+		<![CDATA[
+			import com.ColorGlobal;
+			import com.ConfigGlobal;
+			import com.DataGlobal;
+			import com.manger.RuleManager;
+			import com.pub.PublicClass;
+			import com.util.ColorUtils;
+			
+			import flashx.textLayout.conversion.ConversionType;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.elements.TextFlow;
+			
+			import mx.events.FlexEvent;
+			
+			import sky.util.DMap;
+			
+			import spark.events.TextOperationEvent;
+			
+			private var isComplete:Boolean = false;
+			protected function init(event:FlexEvent):void
+			{
+				isComplete = true;
+				group1_showHandler();
+			}
+			
+			protected function group1_showHandler(event:FlexEvent=null):void
+			{
+				if(isComplete)
+				{
+					var obj:Object = ConfigGlobal.Instance.datas[0];
+					var temp:String;
+					if(obj != null)
+					{
+						//显示当期中奖号码信息
+						temp = PublicClass.getColorHtmlText( obj.data.split('-')[0] , ColorGlobal.RED )
+							+ " " + PublicClass.getColorHtmlText( obj.data.split('-')[1] , ColorGlobal.BULE );						
+						ball_txt.textFlow = TextConverter.importToFlow(temp, TextConverter.TEXT_FIELD_HTML_FORMAT);
+						peri_txt.text = "第" + obj.period + "期";
+						r_txt.text = obj.data.split('-')[1];
+						obj = RuleManager.Instance.getOddEven( String(obj.data.split('-')[0]).split(',') );
+						o_txt.text = obj.odd + ":" + obj.even;
+						t_txt.text = obj.one + ":" + obj.two + ":" + obj.three;
+						z_txt.text = DMap(obj.primes).keys.toString();
+						l_txt.text = obj.three;
+					}
+					
+					peri.text = "" + ConfigGlobal.Instance.blues.length;
+					oddChart.periods = int(peri.text);
+					blueChart.show();
+				}				
+			}			
+			
+			//篮球图表
+			protected function blue_clickHandler(event:MouseEvent):void
+			{
+				lab.text = "蓝色球分布";
+				setEnable();
+				blue.enabled = false;
+				blueChart.visible = true;
+				oddChart.visible = false;			
+			}
+			
+			//奇偶比
+			protected function odd_clickHandler(event:MouseEvent):void
+			{
+				lab.text = "奇偶比";
+				setEnable();
+				odd.enabled = false;
+				oddChart.visible = true;
+				blueChart.visible = false;
+				
+				oddChart.displayState = 1;
+				oddChart.periods = int(peri.text);
+				oddChart.displayOddEven();		
+			}
+			
+			//三区比
+			protected function ott_clickHandler(event:MouseEvent):void
+			{
+				lab.text = "三区比";
+				setEnable();
+				ott.enabled = false;
+				oddChart.visible = true;
+				blueChart.visible = false;
+				
+				oddChart.displayState = 2;
+				oddChart.periods = int(peri.text);
+				oddChart.displayOTT();
+			}
+			
+			protected function peri_changeHandler(event:TextOperationEvent):void
+			{
+				
+			}			
+					
+			//质数比
+			protected function prime_clickHandler(event:MouseEvent):void
+			{
+				lab.text = "质数比";
+				setEnable();
+				prime.enabled = false;
+				oddChart.visible = true;
+				blueChart.visible = false;
+				
+				oddChart.displayState = 3;
+				oddChart.periods = int(peri.text);
+				oddChart.displayPrime();
+			}
+			
+			//连号比
+			protected function hyphen_clickHandler(event:MouseEvent):void
+			{
+				lab.text = "连号比";
+				setEnable();
+				hyphen.enabled = false;
+				oddChart.visible = true;
+				blueChart.visible = false;
+				
+				oddChart.displayState = 4;
+				oddChart.periods = int(peri.text);
+				oddChart.displayHyphen();
+			}
+			
+			public function setEnable(value:Boolean=true):void
+			{
+				blue.enabled = value;
+				odd.enabled = value;
+				ott.enabled = value;
+				prime.enabled = value;
+				//hyphen.enabled = value;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<chart:BlueChartPanel id="blueChart" x="50" y="300" visible="true" />
+	<chart:OddChartPanel id="oddChart" x="50" y="300" visible="false" />
+	
+	<!--当期选号显示-->
+	<s:HGroup horizontalCenter="0" y="50">
+		<s:Label id="peri_txt" horizontalCenter="0" color="#000000" />
+		<!--<s:Label id="ball_txt" horizontalCenter="0" color="#0000ff"/>-->
+		<s:RichText id="ball_txt" horizontalCenter="0" />
+		
+	</s:HGroup>
+	
+	<s:VGroup right="100" y="35" gap="15">
+		<s:Label id="r_txt" /> <!--蓝号-->
+		<s:Label id="o_txt" /> <!--奇偶比-->
+		<s:Label id="t_txt" /> <!--三区比-->
+		<s:Label id="z_txt" /> <!--质数比-->
+		<s:Label id="l_txt" /> <!--连号比-->	
+	</s:VGroup>
+	
+	<s:VGroup right="0"  >
+		<!--期数-->
+		<s:TextInput id="peri" width="50" restrict="0-9" x="400" change="peri_changeHandler(event)" verticalCenter="-100" />
+		<s:Button id="blue" label="蓝号" click="blue_clickHandler(event)" />
+		<s:Button id="odd" label="奇偶比" click="odd_clickHandler(event)" />
+		<s:Button id="ott" label="三区比" click="ott_clickHandler(event)" />
+		<s:Button id="prime" label="质数比" click="prime_clickHandler(event)" />
+		<s:Button id="hyphen" label="连号比" click="hyphen_clickHandler(event)" enabled="false" />
+	</s:VGroup>
+	
+	<s:Label text="图表区" fontSize="14" color="#0000ff" left="0" top="0" />
+	<s:Label id="lab" text="蓝色球分布"  fontSize="14" color="#ff00ff" horizontalCenter="0" top="0" />
+</s:Group>
